@@ -15,21 +15,39 @@ jobs:
       - name: self-test hooks
         run: |
           set -e
-          mkdir -p /tmp/test-repo && cd /tmp/test-repo
+          cd /tmp
+          mkdir -p test-repo && cd test-repo
           git init
           git config user.email "test@test.com"
           git config user.name "Test"
 
-          cp -r "$GITHUB_WORKSPACE/hooks" .git/hooks/
-          chmod +x .git/hooks/*/*
+          # Install hooks using the actual install script
+          bash "$GITHUB_WORKSPACE/install.sh"
 
-          # test conventional commit
-          echo "bad message" | .git/hooks/commit-msg/conventional /dev/stdin 2>&1 && exit 1 || true
-          echo "feat: good message" | .git/hooks/commit-msg/conventional /dev/stdin
+          # test conventional commit (via runner script)
+          echo "bad message" > msg
+          bash .git/hooks/commit-msg msg 2>&1 && exit 1 || true
+          echo "feat(scope): good message" > msg
+          bash .git/hooks/commit-msg msg
 
-          # test branch-name
+          # test branch-name (via runner script)
           git checkout -b feat/test-branch
-          .git/hooks/pre-push/branch-name
+          bash .git/hooks/pre-push
 
           git checkout -b BAD_BRANCH 2>/dev/null || true
-          .git/hooks/pre-push/branch-name 2>&1 && exit 1 || true
+          bash .git/hooks/pre-push 2>&1 && exit 1 || true
+
+          # test secret detection
+          echo "AWS_KEY=AKIA123456789EXAMPLE" > .env
+          git add .env
+          git commit -m "test" 2>&1 && exit 1 || true
+
+          # test SKIP bypass
+          SKIP=secret-check git commit -m "test sec" 2>&1 | tail -1
+
+          # test large file detection
+          dd if=/dev/zero of=big.bin bs=1M count=2 2>/dev/null
+          git add big.bin
+          git commit -m "big" 2>&1 && exit 1 || true
+
+          echo "ALL TESTS PASSED"

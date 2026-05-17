@@ -66,9 +66,11 @@ install_hooks_type() {
   [[ $found -eq 0 ]] && return
 
   if [[ -f "$runner" ]]; then
-    echo -n "  overwrite $hook_type? [y/N] "
-    read -r resp
-    [[ "$resp" != "y" ]] && { ok "skip $hook_type"; return; }
+    if [[ -t 0 ]]; then
+      echo -n "  overwrite $hook_type? [y/N] "
+      read -r resp
+      [[ "$resp" != "y" ]] && { ok "skip $hook_type"; return; }
+    fi
   fi
 
   mkdir -p "$hooks_d"
