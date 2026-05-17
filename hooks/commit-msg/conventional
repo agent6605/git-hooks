@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly COMMIT_MSG_FILE="${1}"
+
+readonly CONVENTIONAL_RE='^(fixup! |squash! )?(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,72}'
+
+skip() { [[ -n "${SKIP:-}" ]] && echo "$SKIP" | grep -qw "conventional"; }
+
+main() {
+  skip && exit 0
+  [[ ! -f "$COMMIT_MSG_FILE" ]] && exit 0
+
+  local first_line
+  first_line=$(head -1 "$COMMIT_MSG_FILE")
+
+  # Allow merge commits and reverts
+  echo "$first_line" | grep -qE '^(Merge|Revert)' && exit 0
+
+  if ! echo "$first_line" | grep -qPE "$CONVENTIONAL_RE"; then
+    echo ""
+    echo "COMMIT MSG: not conventional"
+    echo "  Format: type(scope?): subject"
+    echo "  Types: feat fix docs style refactor perf test build ci chore revert"
+    echo "  Example: fix(auth): handle token expiry edge case"
+    echo ""
+    echo "Skip with: SKIP=conventional git commit ..."
+    exit 1
+  fi
+}
+
+main

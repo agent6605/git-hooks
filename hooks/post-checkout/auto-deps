@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+skip() { [[ -n "${SKIP:-}" ]] && echo "$SKIP" | grep -qw "auto-deps"; }
+
+main() {
+  skip && exit 0
+
+  local old_head new_head branch_change
+  old_head=$1
+  new_head=$2
+  branch_change=$3
+
+  # Only run on branch change, not file checkout
+  [[ "$branch_change" != "1" ]] && exit 0
+
+  # Changed lockfile detection
+  if ! git diff --name-only "$old_head" "$new_head" 2>/dev/null | grep -qE '(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Gemfile\.lock|go\.sum|requirements\.txt|Cargo\.lock|poetry\.lock|composer\.lock)'; then
+    exit 0
+  fi
+
+  echo "DEPS: lockfile changed"
+  echo ""
+
+  if [[ -f "package-lock.json" ]] && command -v npm &>/dev/null; then
+    echo "  npm install ..."
+    npm install --silent 2>&1 | tail -1
+  elif [[ -f "yarn.lock" ]] && command -v yarn &>/dev/null; then
+    echo "  yarn install ..."
+    yarn install --silent 2>&1 | tail -1
+  elif [[ -f "Gemfile.lock" ]] && command -v bundle &>/dev/null; then
+    echo "  bundle install ..."
+    bundle install --quiet 2>&1 | tail -1
+  elif [[ -f "go.sum" ]] && command -v go &>/dev/null; then
+    echo "  go mod download ..."
+    go mod download 2>&1 | tail -1
+  elif [[ -f "Cargo.lock" ]] && command -v cargo &>/dev/null; then
+    echo "  cargo update ..."
+    cargo update --quiet 2>&1 | tail -1
+  fi
+
+  echo "DEPS: sync done"
+}
+
+main

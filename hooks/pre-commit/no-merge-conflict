@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+skip() { [[ -n "${SKIP:-}" ]] && echo "$SKIP" | grep -qw "no-merge-conflict"; }
+
+main() {
+  skip && exit 0
+
+  local files
+  files=$(git diff --cached --name-only --diff-filter=ACM)
+  [[ -z "$files" ]] && exit 0
+
+  local found=0
+  while IFS= read -r file; do
+    [[ ! -f "$file" ]] && continue
+    if git show :"$file" | grep -qPn '^[<>=]{7}'; then
+      echo "MERGE CONFLICT: unresolved markers in $file"
+      found=1
+    fi
+  done <<< "$files"
+
+  if [[ $found -eq 1 ]]; then
+    echo ""
+    echo "Resolve conflicts before committing."
+    exit 1
+  fi
+}
+
+main

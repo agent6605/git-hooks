@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly BRANCH_RE='^(main|master|develop|release/[a-z0-9._-]+|hotfix/[a-z0-9._-]+|(feat|fix|docs|refactor|test|chore)/[a-z0-9._-]+)$'
+readonly MAX_LENGTH=72
+
+skip() { [[ -n "${SKIP:-}" ]] && echo "$SKIP" | grep -qw "branch-name"; }
+
+main() {
+  skip && exit 0
+
+  local branch
+  branch=$(git symbolic-ref --short HEAD 2>/dev/null || true)
+  [[ -z "$branch" ]] && exit 0
+
+  if ! echo "$branch" | grep -qPE "$BRANCH_RE"; then
+    echo ""
+    echo "BRANCH NAME: invalid format"
+    echo "  Current: $branch"
+    echo "  Allowed: feat/ fix/ docs/ refactor/ test/ chore/ hotfix/ release/"
+    echo "  Example: feat/add-login-flow"
+    echo ""
+    echo "Skip with: SKIP=branch-name git push ..."
+    exit 1
+  fi
+
+  if [[ ${#branch} -gt $MAX_LENGTH ]]; then
+    echo ""
+    echo "BRANCH NAME: too long (${#branch} > $MAX_LENGTH)"
+    exit 1
+  fi
+}
+
+main

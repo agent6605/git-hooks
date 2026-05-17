@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+skip() { [[ -n "${SKIP:-}" ]] && echo "$SKIP" | grep -qw "trailing-whitespace"; }
+
+main() {
+  skip && exit 0
+
+  local files
+  files=$(git diff --cached --name-only --diff-filter=ACM -- \
+    ':!*.min.*' ':!*.svg' ':!*.png' ':!*.jpg' ':!*.woff2' ':!*.pdf')
+  [[ -z "$files" ]] && exit 0
+
+  local fixed=0
+  for file in $files; do
+    [[ ! -f "$file" ]] && continue
+    if git show :"$file" | grep -qPn '[[:space:]]$'; then
+      sed -i 's/[[:space:]]*$//' "$file"
+      git add "$file"
+      echo "TRAIL SPACE: trimmed $file"
+      fixed=1
+    fi
+  done
+
+  [[ $fixed -eq 1 ]] && echo "Whitespace fixed automatically."
+}
+
+main
