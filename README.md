@@ -1,5 +1,11 @@
 # git-hooks · zero-dep, one-command commit guards
 
+<p align="center">
+  <img src="assets/terminal.png" alt="git-hooks demo" width="800">
+  <br>
+  <em>Replay live: <code>asciinema play assets/demo.cast</code></em>
+</p>
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/agent6605/git-hooks/main/install.sh | bash
 ```
