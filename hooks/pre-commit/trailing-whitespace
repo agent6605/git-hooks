@@ -25,4 +25,4 @@ main() {
   [[ $fixed -eq 1 ]] && echo "Whitespace fixed automatically."
 }
 
-main
+main "$@"

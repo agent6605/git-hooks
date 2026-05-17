@@ -2,8 +2,8 @@
 set -euo pipefail
 
 readonly REPO="agent6605/git-hooks"
+# shellcheck disable=SC2034
 readonly VERSION="v1.0.0"
-readonly HOOK_URL="https://raw.githubusercontent.com/$REPO/$VERSION/hooks"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -130,7 +130,9 @@ selective_hooks() {
   fi
 }
 
+# shellcheck disable=SC2120
 main() {
+  # shellcheck disable=SC2119
   parse_args "$@"
   REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
