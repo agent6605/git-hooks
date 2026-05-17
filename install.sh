@@ -55,58 +55,77 @@ parse_args() {
   TARGET_DIR=$(cd "$TARGET_DIR" && pwd)
 }
 
-install_mode() {
-  local src="$1" dst="$2"
-  if $USE_LINK; then
-    ln -sf "$src" "$dst"
-  else
-    cp "$src" "$dst"
-    chmod +x "$dst"
-  fi
-}
+install_hooks_type() {
+  local hook_type="$1" hook_dir="$2"
+  local runner="$hook_dir/$hook_type"
+  local hooks_d="$hook_dir/hooks.d/$hook_type"
+  local hook_files=("$REPO_DIR/hooks/$hook_type"/*)
 
-install_hook() {
-  local name="$1" hook_dir="$2"
-  local src_file="$REPO_DIR/hooks/$name"
-  local hook_dst="$hook_dir/$name"
+  local found=0
+  for f in "${hook_files[@]}"; do [[ -f "$f" ]] && { found=1; break; }; done
+  [[ $found -eq 0 ]] && return
 
-  if [[ -f "$hook_dst" ]]; then
-    echo -n "  overwrite? [y/N] "
+  if [[ -f "$runner" ]]; then
+    echo -n "  overwrite $hook_type? [y/N] "
     read -r resp
-    [[ "$resp" != "y" ]] && { ok "skip $name"; return; }
+    [[ "$resp" != "y" ]] && { ok "skip $hook_type"; return; }
   fi
 
-  mkdir -p "$(dirname "$hook_dst")"
-  install_mode "$src_file" "$hook_dst"
-  ok "$name"
+  mkdir -p "$hooks_d"
+
+  if $USE_LINK; then
+    for f in "${hook_files[@]}"; do
+      [[ ! -f "$f" ]] && continue
+      local name
+      name=$(basename "$f")
+      ln -sf "$f" "$hooks_d/$name"
+    done
+  else
+    for f in "${hook_files[@]}"; do
+      [[ ! -f "$f" ]] && continue
+      local name
+      name=$(basename "$f")
+      cp "$f" "$hooks_d/$name"
+      chmod +x "$hooks_d/$name"
+    done
+  fi
+
+  cat > "$runner" << 'RUNNER'
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOOKS_DIR="$SCRIPT_DIR/hooks.d/__TYPE__"
+
+for hook in "$HOOKS_DIR"/*; do
+  [ -f "$hook" ] || continue
+  name=$(basename "$hook")
+  if [[ -z "${SKIP:-}" ]] || ! echo "$SKIP" | grep -qw "$name"; then
+    bash "$hook"
+  fi
+done
+RUNNER
+  sed -i "s/__TYPE__/$hook_type/g" "$runner"
+  chmod +x "$runner"
+
+  local count
+  count=$(find "$REPO_DIR/hooks/$hook_type" -type f | wc -l)
+  ok "$hook_type ($count hooks)"
 }
 
 selective_hooks() {
   local hook_dir="$1"
-  local selected=()
-
   if [[ -n "$HOOK_LIST" ]]; then
     IFS=',' read -ra selected <<< "$HOOK_LIST"
-  else
-    for f in "$REPO_DIR"/hooks/*/*; do
-      [[ -f "$f" ]] && selected+=("$f")
+    for name in "${selected[@]}"; do
+      for dir in pre-commit commit-msg pre-push post-checkout post-merge; do
+        if [[ -f "$REPO_DIR/hooks/$dir/$name" ]]; then
+          install_hooks_type "$dir" "$hook_dir"
+          break
+        fi
+      done
     done
   fi
-
-  for hook in "${selected[@]}"; do
-    local rel="${hook#$REPO_DIR/hooks/}"
-    local hook_type="${rel%%/*}"
-    local hook_name="${rel#*/}"
-
-    case "$hook_type" in
-      pre-commit|commit-msg|pre-push|post-checkout|post-merge)
-        install_hook "$rel" "$hook_dir"
-        ;;
-      *)
-        err "unknown hook type: $hook_type"
-        ;;
-    esac
-  done
 }
 
 main() {
@@ -131,19 +150,12 @@ main() {
     selective_hooks "$hook_dir"
   else
     for dir in pre-commit commit-msg pre-push post-checkout post-merge; do
-      for f in "$REPO_DIR/hooks/$dir"/*; do
-        [[ -f "$f" ]] && install_hook "$dir/$(basename "$f")" "$hook_dir"
-      done
+      install_hooks_type "$dir" "$hook_dir"
     done
   fi
 
   echo ""
   ok "hooks installed in $hook_dir"
-
-  if $USE_LINK; then
-    echo ""
-    info "symlink mode: hooks auto-update when you \`git pull\` the hooks repo."
-  fi
 }
 
 main "$@"
