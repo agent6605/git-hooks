@@ -17,7 +17,7 @@ main() {
   # Allow merge commits and reverts
   echo "$first_line" | grep -qE '^(Merge|Revert)' && exit 0
 
-  if ! echo "$first_line" | grep -qPE "$CONVENTIONAL_RE"; then
+  if ! echo "$first_line" | grep -qP "$CONVENTIONAL_RE"; then
     echo ""
     echo "COMMIT MSG: not conventional"
     echo "  Format: type(scope?): subject"

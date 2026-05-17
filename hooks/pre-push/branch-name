@@ -13,7 +13,7 @@ main() {
   branch=$(git symbolic-ref --short HEAD 2>/dev/null || true)
   [[ -z "$branch" ]] && exit 0
 
-  if ! echo "$branch" | grep -qPE "$BRANCH_RE"; then
+  if ! echo "$branch" | grep -qP "$BRANCH_RE"; then
     echo ""
     echo "BRANCH NAME: invalid format"
     echo "  Current: $branch"

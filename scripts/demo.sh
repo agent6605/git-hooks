@@ -56,21 +56,21 @@ echo -e "${GREEN}[ok]${NC} Bypassed, commit succeeded."
 sleep 1
 
 comment "5. Conventional commit validation"
-comment "Bad message — should fail:"
-cmd "echo 'bad message' | bash .git/hooks/commit-msg/conventional /dev/stdin || true"
+comment "Bad message saved to file:"
+cmd 'echo "bad message" > /tmp/msg && bash .git/hooks/commit-msg /tmp/msg || true'
 sleep 0.5
 
-comment "Good message — should pass:"
-cmd "echo 'feat: add env file' | bash .git/hooks/commit-msg/conventional /dev/stdin"
+comment "Good message — passes:"
+cmd 'echo "feat: add env file" > /tmp/msg && bash .git/hooks/commit-msg /tmp/msg'
 sleep 0.5
 
 comment "6. Branch name validation"
 comment "Invalid branch — blocked:"
-cmd "git checkout -b BAD_BRANCH_NAME 2>/dev/null; bash .git/hooks/pre-push/branch-name || true"
+cmd "git checkout -q -b BAD_BRANCH_NAME 2>/dev/null || true; bash .git/hooks/pre-push || true"
 sleep 0.5
 
 comment "Valid branch — passes:"
-cmd "git checkout -b feat/add-env-support 2>/dev/null; bash .git/hooks/pre-push/branch-name"
+cmd "git checkout -q -b feat/add-env-support 2>/dev/null || true; bash .git/hooks/pre-push"
 sleep 0.5
 
 echo ""

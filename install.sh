@@ -101,7 +101,7 @@ for hook in "$HOOKS_DIR"/*; do
   [ -f "$hook" ] || continue
   name=$(basename "$hook")
   if [[ -z "${SKIP:-}" ]] || ! echo "$SKIP" | grep -qw "$name"; then
-    bash "$hook"
+    bash "$hook" "$@"
   fi
 done
 RUNNER
