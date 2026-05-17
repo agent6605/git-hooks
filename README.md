@@ -1,7 +1,7 @@
 # git-hooks · zero-dep, one-command commit guards
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jeff/git-hooks/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/agent6605/git-hooks/main/install.sh | bash
 ```
 
 **No npm. No Python. No Docker.** Plain bash hooks that work in any repo — JavaScript, Go, Rust, Python, whatever. Drop them in and they run.
@@ -22,7 +22,7 @@ curl -fsSL https://raw.githubusercontent.com/jeff/git-hooks/main/install.sh | ba
 
 **One repo:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jeff/git-hooks/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/agent6605/git-hooks/main/install.sh | bash
 ```
 
 **Specific hooks only:**

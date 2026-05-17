@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly REPO="jeff/git-hooks"
+readonly REPO="agent6605/git-hooks"
 readonly VERSION="v1.0.0"
 readonly HOOK_URL="https://raw.githubusercontent.com/$REPO/$VERSION/hooks"
 
